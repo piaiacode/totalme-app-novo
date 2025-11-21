@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, signUp } from '@/lib/auth';
-import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
+import { createClient } from '@/lib/supabase';
+import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,12 +13,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     name: '',
   });
+
+  useEffect(() => {
+    setMounted(true);
+    
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push('/');
+      }
+    };
+    
+    checkUser();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,13 +45,28 @@ export default function LoginPage() {
     try {
       if (isLogin) {
         const { data, error } = await signIn(formData.email, formData.password);
+        
         if (error) {
-          setError(error);
+          // Mensagens de erro mais amigáveis
+          if (error.includes('Invalid login credentials')) {
+            setError('Email ou senha incorretos. Verifique suas credenciais.');
+          } else if (error.includes('Email not confirmed')) {
+            setError('Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.');
+          } else if (error.includes('Sessão não foi criada')) {
+            setError('Verifique se você confirmou seu email. Caso não tenha recebido, solicite um novo email de confirmação.');
+          } else {
+            setError(error);
+          }
         } else if (data?.session) {
-          router.push('/');
-          router.refresh();
+          setSuccess('Login realizado com sucesso! Redirecionando...');
+          
+          // Aguardar um pouco para garantir que a sessão foi salva
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Forçar refresh da página para atualizar o estado de autenticação
+          window.location.href = '/';
         } else {
-          setError('Não foi possível fazer login. Verifique suas credenciais.');
+          setError('Não foi possível fazer login. Verifique se você confirmou seu email.');
         }
       } else {
         if (!formData.name) {
@@ -42,25 +74,44 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
+        
         const { data, error } = await signUp(formData.email, formData.password, formData.name);
+        
         if (error) {
-          setError(error);
+          if (error.includes('already registered')) {
+            setError('Este email já está cadastrado. Faça login ou use outro email.');
+          } else {
+            setError(error);
+          }
         } else if (data?.user) {
           // Check if email confirmation is required
           if (data.session) {
-            router.push('/');
-            router.refresh();
+            setSuccess('Conta criada com sucesso! Redirecionando...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            window.location.href = '/';
           } else {
-            setSuccess('Conta criada! Verifique seu email para confirmar o cadastro.');
+            setSuccess('Conta criada! Verifique seu email para confirmar o cadastro antes de fazer login.');
+            // Limpar formulário
+            setFormData({ email: '', password: '', name: '' });
+            // Mudar para tela de login após 3 segundos
+            setTimeout(() => {
+              setIsLogin(true);
+              setSuccess('');
+            }, 3000);
           }
         }
       }
     } catch (err: any) {
+      console.error('Erro no handleSubmit:', err);
       setError(err.message || 'Ocorreu um erro. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
@@ -190,7 +241,8 @@ export default function LoginPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-400">{error}</p>
               </div>
             )}

@@ -66,18 +66,21 @@ export async function middleware(req: NextRequest) {
       }
     );
 
+    // Refresh session if expired
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
     // If user is not signed in and trying to access protected routes, redirect to login
     if (!session && req.nextUrl.pathname === '/') {
-      return NextResponse.redirect(new URL('/login', req.url));
+      const redirectUrl = new URL('/login', req.url);
+      return NextResponse.redirect(redirectUrl);
     }
 
     // If user is signed in and trying to access login, redirect to home
     if (session && req.nextUrl.pathname === '/login') {
-      return NextResponse.redirect(new URL('/', req.url));
+      const redirectUrl = new URL('/', req.url);
+      return NextResponse.redirect(redirectUrl);
     }
 
     return response;

@@ -1,70 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Navigation } from '@/components/custom/navigation';
-import { getCurrentUser, getUserProfile, getDailyStats, getUserBadges, signOut } from '@/lib/auth';
-import { Activity, Flame, Droplet, Smile, TrendingUp, Award, LogOut, Loader2 } from 'lucide-react';
+import { mockDailyStats, mockUserProfile } from '@/lib/mock-data';
+import { Activity, Flame, Droplet, Smile, TrendingUp, Award } from 'lucide-react';
 
 export default function Home() {
-  const router = useRouter();
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'workouts' | 'calories' | 'support' | 'profile'>('dashboard');
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [dailyStats, setDailyStats] = useState<any>(null);
-  const [badges, setBadges] = useState<any[]>([]);
-
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  const loadUserData = async () => {
-    try {
-      const { user: currentUser, error: userError } = await getCurrentUser();
-      
-      if (userError || !currentUser) {
-        router.push('/login');
-        return;
-      }
-
-      setUser(currentUser);
-
-      // Load user profile
-      const { data: profileData } = await getUserProfile(currentUser.id);
-      setProfile(profileData);
-
-      // Load daily stats
-      const today = new Date().toISOString().split('T')[0];
-      const { data: statsData } = await getDailyStats(currentUser.id, today);
-      setDailyStats(statsData);
-
-      // Load badges
-      const { data: badgesData } = await getUserBadges(currentUser.id);
-      setBadges(badgesData || []);
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/login');
-    router.refresh();
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-[#00E5C9] mx-auto mb-4" />
-          <p className="text-gray-400">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-black pb-24">
@@ -76,18 +18,11 @@ export default function Home() {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-[#00E5C9] to-[#00B8A3] bg-clip-text text-transparent">
                 TotalMe
               </h1>
-              <p className="text-sm text-gray-400 mt-1">Olá, {profile?.name || 'Usuário'}! 👋</p>
+              <p className="text-sm text-gray-400 mt-1">Olá, {mockUserProfile.name}! 👋</p>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleSignOut}
-                className="p-2 rounded-xl bg-gray-800 hover:bg-gray-700 transition-colors"
-                title="Sair"
-              >
-                <LogOut className="w-5 h-5 text-gray-400" />
-              </button>
+            <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00E5C9] to-[#00B8A3] flex items-center justify-center text-black font-bold">
-                {profile?.name?.charAt(0) || 'U'}
+                {mockUserProfile.name.charAt(0)}
               </div>
             </div>
           </div>
@@ -96,7 +31,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-screen-xl mx-auto px-4 py-6">
-        {currentPage === 'dashboard' && dailyStats && (
+        {currentPage === 'dashboard' && (
           <div className="space-y-6">
             {/* Daily Progress Overview */}
             <section>
@@ -112,13 +47,13 @@ export default function Home() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-[#66FF66]">{dailyStats.calories_consumed}</span>
-                      <span className="text-sm text-gray-500">/ {dailyStats.calories_goal}</span>
+                      <span className="text-2xl font-bold text-[#66FF66]">{mockDailyStats.caloriesConsumed}</span>
+                      <span className="text-sm text-gray-500">/ {mockDailyStats.caloriesGoal}</span>
                     </div>
                     <div className="w-full bg-gray-800 rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-[#66FF66] to-[#44DD44] h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((dailyStats.calories_consumed / dailyStats.calories_goal) * 100, 100)}%` }}
+                        style={{ width: `${(mockDailyStats.caloriesConsumed / mockDailyStats.caloriesGoal) * 100}%` }}
                       />
                     </div>
                   </div>
@@ -134,13 +69,13 @@ export default function Home() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-[#FF9900]">{dailyStats.workouts_completed}</span>
-                      <span className="text-sm text-gray-500">/ {dailyStats.workouts_goal}</span>
+                      <span className="text-2xl font-bold text-[#FF9900]">{mockDailyStats.workoutsCompleted}</span>
+                      <span className="text-sm text-gray-500">/ {mockDailyStats.workoutsGoal}</span>
                     </div>
                     <div className="w-full bg-gray-800 rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-[#FF9900] to-[#DD7700] h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((dailyStats.workouts_completed / dailyStats.workouts_goal) * 100, 100)}%` }}
+                        style={{ width: `${(mockDailyStats.workoutsCompleted / mockDailyStats.workoutsGoal) * 100}%` }}
                       />
                     </div>
                   </div>
@@ -156,13 +91,13 @@ export default function Home() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-[#00E5C9]">{dailyStats.water_intake}</span>
+                      <span className="text-2xl font-bold text-[#00E5C9]">{mockDailyStats.waterIntake}</span>
                       <span className="text-sm text-gray-500">ml</span>
                     </div>
                     <div className="w-full bg-gray-800 rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-[#00E5C9] to-[#00B8A3] h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((dailyStats.water_intake / dailyStats.water_goal) * 100, 100)}%` }}
+                        style={{ width: `${(mockDailyStats.waterIntake / mockDailyStats.waterGoal) * 100}%` }}
                       />
                     </div>
                   </div>
@@ -182,7 +117,7 @@ export default function Home() {
                         <div
                           key={star}
                           className={`w-6 h-6 rounded-full transition-all duration-300 ${
-                            star <= dailyStats.mood_score
+                            star <= mockDailyStats.moodScore
                               ? 'bg-[#A084FF] scale-110'
                               : 'bg-gray-800'
                           }`}
@@ -190,7 +125,7 @@ export default function Home() {
                       ))}
                     </div>
                     <p className="text-xs text-gray-500">
-                      {dailyStats.mood_score >= 4 ? 'Ótimo!' : dailyStats.mood_score >= 3 ? 'Bom' : 'Pode melhorar'}
+                      {mockDailyStats.moodScore >= 4 ? 'Ótimo!' : mockDailyStats.moodScore >= 3 ? 'Bom' : 'Pode melhorar'}
                     </p>
                   </div>
                 </div>
@@ -250,7 +185,7 @@ export default function Home() {
                     </div>
                     <div>
                       <h3 className="font-semibold">Você está indo bem!</h3>
-                      <p className="text-sm text-gray-400">Continue assim</p>
+                      <p className="text-sm text-gray-400">5 de 7 dias ativos</p>
                     </div>
                   </div>
                 </div>
@@ -273,21 +208,19 @@ export default function Home() {
             </section>
 
             {/* Badges */}
-            {badges.length > 0 && (
-              <section>
-                <h2 className="text-xl font-semibold mb-4 text-gray-100">Suas Conquistas</h2>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                  {badges.map((badge) => (
-                    <div
-                      key={badge.id}
-                      className="bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 border border-[#FFD700]/30 rounded-xl px-4 py-3 whitespace-nowrap hover:scale-105 transition-transform duration-300"
-                    >
-                      <span className="text-sm font-medium">{badge.badge_name}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+            <section>
+              <h2 className="text-xl font-semibold mb-4 text-gray-100">Suas Conquistas</h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {mockUserProfile.badges.map((badge, index) => (
+                  <div
+                    key={index}
+                    className="bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 border border-[#FFD700]/30 rounded-xl px-4 py-3 whitespace-nowrap hover:scale-105 transition-transform duration-300"
+                  >
+                    <span className="text-sm font-medium">{badge}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
 
